@@ -4,10 +4,9 @@ sys.path.append(os.getcwd())
 sys.path.append(os.path.dirname(__file__))
 import numpy as np
 
-from utils.general_utils import c_n2w_n, w_n2c_n , rotate_point_cloud
-from utils.w3d_utils import load_a_from_pils, make_wonder3D_cameras
+from utils.w3d_utils import load_mv_prediction, make_wonder3D_cameras
 from Meshrefine import MeshRefine
-from remeshing.util.func import save_images, save_obj
+from MeshRecon.util.func import save_obj
 
 from utils.refine_lr_to_sr import sr_wonder3d_images
 
@@ -42,15 +41,15 @@ def iterative_refine(vertex_init, face_init, front_image, rgbs, normals, camera_
         weights = None
         mv, proj = make_wonder3D_cameras(cam_type=camera_type, angles=[0, -90, 180, 90])
 
-        RGBs, normal_masks, normals, normals_world, c2ws, w2cs, color_masks, front_img = load_a_from_pils(front_image=front_image,
-                                                                                          rgbs=rgbs,
-                                                                                          rm_normal=normals,
-                                                                                          imSize=[512,512],
-                                                                                          view_types=['front', 'right', 'back', 'left'],
-                                                                                          load_color=True,
-                                                                                          cam_pose_dir='mv_diffusion_30/data/fixed_poses/nine_views',
-                                                                                          normal_system='front',
-                                                                                          crop_size=crop_size*2)
+        RGBs, normal_masks, normals, normals_world, c2ws, w2cs, color_masks, front_img = load_mv_prediction(front_image=front_image,
+                                                                                                            rgbs=rgbs,
+                                                                                                            rm_normal=normals,
+                                                                                                            imSize=[512,512],
+                                                                                                            view_types=['front', 'right', 'back', 'left'],
+                                                                                                            load_color=True,
+                                                                                                            cam_pose_dir='mv_diffusion_30/data/fixed_poses/nine_views',
+                                                                                                            normal_system='front',
+                                                                                                            crop_size=crop_size*2)
 
         normal_masks, color_masks = torch.tensor(normal_masks).cuda().float(), torch.tensor(color_masks).cuda().float()
 

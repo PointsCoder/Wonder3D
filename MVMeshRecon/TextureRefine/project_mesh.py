@@ -13,6 +13,7 @@ from pytorch3d.renderer import (
     FoVOrthographicCameras,
 )
 from pytorch3d.renderer import MeshRasterizer
+import nvdiffrast.torch as dr
 
 def render_pix2faces_py3d(meshes, cameras, H=512, W=512, blur_radius=0.0, faces_per_pixel=1):
     """
@@ -43,8 +44,6 @@ def render_pix2faces_py3d(meshes, cameras, H=512, W=512, blur_radius=0.0, faces_
     return {
         "pix_to_face": fragments.pix_to_face[..., 0],
     }
-
-import nvdiffrast.torch as dr
 
 def _warmup(glctx, device=None):
     device = 'cuda' if device is None else device

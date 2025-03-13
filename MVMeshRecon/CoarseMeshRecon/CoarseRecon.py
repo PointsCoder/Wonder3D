@@ -69,7 +69,7 @@ def fast_geo(front_normal: Image.Image, back_normal: Image.Image, side_normal: I
     
     return meshes
 
-def CoarseRecon(front_normal:torch.Tensor, back_normal:torch.Tensor, side_normal:torch.Tensor, output_path, is_persp=False):
+def CoarseMeshInit(front_normal:torch.Tensor, back_normal:torch.Tensor, side_normal:torch.Tensor, output_path, is_persp=False):
     front_normal = Image.fromarray((front_normal.cpu().numpy()*255).astype(np.uint8))
     back_normal = Image.fromarray((back_normal.cpu().numpy()*255).astype(np.uint8))
     side_normal = Image.fromarray((side_normal.cpu().numpy()*255).astype(np.uint8))

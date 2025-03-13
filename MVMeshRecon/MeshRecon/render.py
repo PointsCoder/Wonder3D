@@ -3,7 +3,20 @@ import nvdiffrast.torch as dr
 import torch
 from typing import Tuple
 
-def _warmup(glctx, device=None):
+from pytorch3d.structures import Meshes
+from pytorch3d.renderer.mesh.shader import ShaderBase
+from pytorch3d.renderer import (
+    RasterizationSettings,
+    MeshRendererWithFragments,
+    TexturesVertex,
+    MeshRasterizer,
+    BlendParams,
+    FoVOrthographicCameras,
+    look_at_view_transform,
+    hard_rgb_blend,
+)
+
+def _warmup_for_render(glctx, device=None):
     device = 'cuda' if device is None else device
     #windows workaround for https://github.com/NVlabs/nvdiffrast/issues/59
     def tensor(*args, **kwargs):
@@ -32,7 +45,7 @@ class NormalsRenderer:
             self._mvp = mvp
         self._image_size = image_size
         self._glctx = glctx
-        _warmup(self._glctx, device)
+        _warmup_for_render(self._glctx, device)
 
     def render(self,
             vertices: torch.Tensor, #V,3 float
@@ -51,21 +64,6 @@ class NormalsRenderer:
         col = torch.concat((col,alpha),dim=-1) #C,H,W,4
         col = dr.antialias(col, rast_out, vertices_clip, faces) #C,H,W,4
         return col #C,H,W,4
-
-
-
-from pytorch3d.structures import Meshes
-from pytorch3d.renderer.mesh.shader import ShaderBase
-from pytorch3d.renderer import (
-    RasterizationSettings,
-    MeshRendererWithFragments,
-    TexturesVertex,
-    MeshRasterizer,
-    BlendParams,
-    FoVOrthographicCameras,
-    look_at_view_transform,
-    hard_rgb_blend,
-)
 
 class VertexColorShader(ShaderBase):
     def forward(self, fragments, meshes, **kwargs) -> torch.Tensor:
@@ -112,26 +110,3 @@ def render_mesh_vertex_color(mesh, cameras, H, W, blur_radius=0.0, faces_per_pix
     with torch.autocast(dtype=input_dtype, device_type=torch.device(device).type):
         images, _ = renderer(mesh)
     return images   # BHW4
-
-class Pytorch3DNormalsRenderer: # 100 times slower!!!
-    def __init__(self, cameras, image_size, device):
-        self.cameras = cameras.to(device)
-        self._image_size = image_size
-        self.device = device
-    
-    def render(self,
-            vertices: torch.Tensor, #V,3 float
-            normals: torch.Tensor, #V,3 float   in [-1, 1]
-            faces: torch.Tensor, #F,3 long
-            ) ->torch.Tensor: #C,H,W,4
-        mesh = Meshes(verts=[vertices], faces=[faces], textures=TexturesVertex(verts_features=[(normals + 1) / 2])).to(self.device)
-        return render_mesh_vertex_color(mesh, self.cameras, self._image_size[0], self._image_size[1], device=self.device)
-    
-def save_tensor_to_img(tensor, save_dir):
-    from PIL import Image
-    import numpy as np
-    for idx, img in enumerate(tensor):
-        img = img[..., :3].cpu().numpy()
-        img = (img * 255).astype(np.uint8)
-        img = Image.fromarray(img)
-        img.save(save_dir + f"{idx}.png")

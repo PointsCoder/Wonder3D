@@ -4,15 +4,14 @@ sys.path.append(os.getcwd())
 sys.path.append(os.path.dirname(__file__))
 
 import numpy as np
-import torch
 
-from utils.general_utils import c_n2w_n, w_n2c_n , rotate_point_cloud
-from utils.w3d_utils import load_a_from_pils, make_wonder3D_cameras
-from Meshrecon import MeshRecon
-from CoarseMeshRecon.CoarseRecon import CoarseRecon
-from remeshing.util.func import save_images, save_obj
+from utils.general_utils import convert_normals_to_cam
+from utils.w3d_utils import load_mv_prediction, make_wonder3D_cameras
+from Meshrecon import Meshrecon
+from CoarseMeshRecon.CoarseRecon import CoarseMeshInit
+from MeshRecon.util.func import save_obj
 
-from utils.refine_lr_to_sr import sr_wonder3d_images, sr_front_img
+from utils.refine_lr_to_sr import sr_wonder3d_images
 
 import torch
 import torch.nn.functional as F
@@ -20,6 +19,8 @@ from PIL import Image
 
 
 VIEWS = ['front', 'front_right', 'right', 'back', 'left', 'front_left']
+
+do_sr = False
 
 def c2w_to_w2c(c2w:torch.Tensor):
     # y = Rx + t, x = R_inv(y - t)
@@ -29,7 +30,6 @@ def c2w_to_w2c(c2w:torch.Tensor):
     w2c[..., 3, 3] = 1.0
     return w2c
 
-do_sr = False
 
 def transoform_rendered_to_pils(images):
 
@@ -54,15 +54,15 @@ def coarse_recon(front_image, rgbs, normals, camera_type, scence_name, crop_size
         weights = None
         mv, proj = make_wonder3D_cameras(cam_type=camera_type)
         # change the data loading
-        RGBs, normal_masks, normals, normals_world, c2ws, w2cs, color_masks, front_img = load_a_from_pils(front_image=front_image,
-                                                                                          rgbs=rgbs,
-                                                                                          rm_normal=normals,
-                                                                                          imSize=[256,256],
-                                                                                          view_types=['front', 'front_right', 'right', 'back', 'left', 'front_left'],
-                                                                                          load_color=True,
-                                                                                          cam_pose_dir='mv_diffusion_30/data/fixed_poses/nine_views',
-                                                                                          normal_system='front',
-                                                                                          crop_size=crop_size)
+        RGBs, normal_masks, normals, normals_world, c2ws, w2cs, color_masks, front_img = load_mv_prediction(front_image=front_image,
+                                                                                                            rgbs=rgbs,
+                                                                                                            rm_normal=normals,
+                                                                                                            imSize=[256,256],
+                                                                                                            view_types=['front', 'front_right', 'right', 'back', 'left', 'front_left'],
+                                                                                                            load_color=True,
+                                                                                                            cam_pose_dir='mv_diffusion_30/data/fixed_poses/nine_views',
+                                                                                                            normal_system='front',
+                                                                                                            crop_size=crop_size)
 
         normal_masks, color_masks = torch.tensor(normal_masks).cuda().float(), torch.tensor(color_masks).cuda().float()
 
@@ -105,22 +105,22 @@ def coarse_recon(front_image, rgbs, normals, camera_type, scence_name, crop_size
             else:
                 raise ValueError("weights is None, and can not be guessed from image_list")
 
-        normals = w_n2c_n(normals_world, mv)
+        normals = convert_normals_to_cam(normals_world, mv)
 
         if camera_type == 'persp':
             persp = True
         else:
             persp = False
 
-        vertices_init, faces_init = CoarseRecon(front_normal=normals[0], back_normal=normals[3], side_normal=normals[2], output_path=output_path, is_persp=persp)
+        vertices_init, faces_init = CoarseMeshInit(front_normal=normals[0], back_normal=normals[3], side_normal=normals[2], output_path=output_path, is_persp=persp)
 
         if vertices_init is not None:
             save_obj(vertices_init, faces_init, f"{output_path}/3d_model/init_3d_model.obj")
         else:
             print("for sunken case use sphere as init!")
 
-        texture, rgb_rendered, normals_rendered, vertices, faces = MeshRecon(mv_normal=mv, proj_normal=proj, gt_normals=normals_world, mv_RGB=mv, proj_RGB=proj, gt_RGBs=RGBs, vertices_init=vertices_init, faces_init=faces_init,
-                            RGB_refine_index=np.array([0,1,2,3,4,5]), RGB_view_weights=np.array(weights), debug_path=output_path, clean_mesh=False, persp=persp, output_path=output_path)
+        texture, rgb_rendered, normals_rendered, vertices, faces = Meshrecon(mv_normal=mv, proj_normal=proj, gt_normals=normals_world, mv_RGB=mv, proj_RGB=proj, gt_RGBs=RGBs, vertices_init=vertices_init, faces_init=faces_init,
+                                                                             RGB_refine_index=np.array([0,1,2,3,4,5]), RGB_view_weights=np.array(weights), debug_path=output_path, clean_mesh=False, persp=persp, output_path=output_path)
 
         obj_path = f'{output_path}/3d_model/model.glb'
 

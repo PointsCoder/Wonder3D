@@ -1,14 +1,18 @@
+import sys
+import os
+sys.path.append(os.getcwd())
+sys.path.append(os.path.dirname(__file__))
 import numpy as np
-from remeshing.util.render import Renderer
-from refine_texture.api import opt_warpper
-from utils.generate_sphere import make_sphere
+from MVMeshRecon.MeshRecon.util.render import Renderer
+from TextureRefine.warpper import warpper
+from utils.general_utils import make_sphere
 
-from remeshing.util.func import save_obj, save_images_init
-from remeshing.core.remesh import calc_vertex_normals
+from MVMeshRecon.MeshRecon.util.func import save_images_init
+from MVMeshRecon.MeshRecon.remesh import calc_vertex_normals
 from utils.general_utils import erode_mask
 import torch
-from MeshRecon.optimize import simple_clean_mesh, to_pyml_mesh, geo_aware_mesh_refine
-from remeshing.optimize import do_optimize
+from MeshRecon.optimize import simple_clean_mesh, transfer_to_pyml_mesh, geo_aware_mesh_refine
+
 
 def MeshRefine(mv_normal, proj_normal, gt_normals, mv_RGB, proj_RGB, gt_RGBs, RGB_refine_index=None, RGB_view_weights=None, vertices_init=None, faces_init=None,  debug_path = None, persp=True, output_path='debug'):
     if debug_path is None:
@@ -32,13 +36,13 @@ def MeshRefine(mv_normal, proj_normal, gt_normals, mv_RGB, proj_RGB, gt_RGBs, RG
     vertices, faces = geo_aware_mesh_refine(vertices_init, faces_init, gt_normals_world, renderer, mv_normal,
                                                   proj_normal, 100, start_edge_len=0.008,
                                                   end_edge_len=0.005, b_persp=persp, update_normal_interval=10, update_warmup=5)
-    meshes = simple_clean_mesh(to_pyml_mesh(vertices, faces), apply_smooth=True, stepsmoothnum=1, apply_sub_divide=True,
+    meshes = simple_clean_mesh(transfer_to_pyml_mesh(vertices, faces), apply_smooth=True, stepsmoothnum=1, apply_sub_divide=True,
                                sub_divide_threshold=0.25).to("cuda")
     vertices = meshes._verts_list[0]
     faces = meshes._faces_list[0]
 
     torch.cuda.empty_cache()
-    textured_mesh = opt_warpper(vertices, faces, gt_RGBs, mv_RGB, proj_RGB, weights=RGB_view_weights, refine_index=RGB_refine_index, render_size=gt_RGBs.shape[-2], b_perspective=persp, visualize=False, do_refine_uv=True)
+    textured_mesh = warpper(vertices, faces, gt_RGBs, mv_RGB, proj_RGB, weights=RGB_view_weights, refine_index=RGB_refine_index, render_size=gt_RGBs.shape[-2], b_perspective=persp, visualize=False, do_refine_uv=True)
 
     render_path = f'{output_path}/render_out'
 

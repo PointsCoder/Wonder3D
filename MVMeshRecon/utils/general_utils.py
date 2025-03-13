@@ -10,10 +10,16 @@ import rembg
 import pyrender
 import trimesh
 import imageio
+from typing import *
 
 import pymeshlab
-import pymeshlab as ml
-from pymeshlab import PercentageValue
+
+def make_sphere(level: int = 2, radius=1., device='cuda') -> tuple[torch.Tensor, torch.Tensor]:
+    sphere = trimesh.creation.icosphere(subdivisions=level, radius=0.2, color=None)
+    vertices = torch.tensor(sphere.vertices, device=device, dtype=torch.float32) * radius
+    faces = torch.tensor(sphere.faces, device=device, dtype=torch.long)
+
+    return vertices, faces
 
 # render with gl camera
 def render_glcam(K,
@@ -88,12 +94,7 @@ def rendermesh(obj_path, output_path):
     print('save results to: ',video_name)
     
 
-import pymeshlab
-import pymeshlab as ml
-from pymeshlab import PercentageValue
-
 def load_mesh_process(mesh_path, shape_init_mesh_up="+y", shape_init_mesh_front="+x", shape_init_params=0.9, device='cuda'):
-    import trimesh
 
     scene = trimesh.load(mesh_path)
     if isinstance(scene, trimesh.Trimesh):
@@ -302,7 +303,7 @@ def rotate_point_cloud(point_cloud, axis, angle_degrees):
     return rotated_point_cloud
 
 
-def w_n2c_n(imgs, mv, black_bg = True):
+def convert_normals_to_cam(imgs, mv, black_bg = True):
     # imgs: (B,H,W,C)
     # mv: (B,4,4), world to camera
 

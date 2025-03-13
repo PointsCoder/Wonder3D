@@ -1,17 +1,14 @@
+import sys
+import os
+sys.path.append(os.getcwd())
+sys.path.append(os.path.dirname(__file__))
 from tqdm import tqdm
 from MVMeshRecon.MeshRecon.opt import MeshOptimizer
-from remeshing.core.remesh import calc_vertex_normals
+from MVMeshRecon.MeshRecon.core.remesh import calc_vertex_normals
 from utils.loss_utils import NormalLoss
 import torchvision.utils as vutils
 
-def save_tensor_mask(mask, filename):
-    # Squeeze to remove any extra dimensions
-    mask = mask.squeeze(0)
-
-    # Ensure the mask is in a 0-1 range and in the right shape (CxHxW)
-    vutils.save_image(mask, filename)
-
-def do_optimize(vertices, faces, ref_images, renderer, weights, remeshing_steps, edge_len_lims=(0.01, 0.1), decay=0.999):
+def optimize_remesh(vertices, faces, ref_images, renderer, weights, remeshing_steps, edge_len_lims=(0.01, 0.1), decay=0.999):
     # optimizer initialization
     opt = MeshOptimizer(vertices, faces, local_edgelen=False, edge_len_lims=edge_len_lims, gain=0.1)
     vertices = opt.vertices

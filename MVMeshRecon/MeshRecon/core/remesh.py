@@ -162,16 +162,6 @@ def split_edges(
         pack_faces: bool = True,
 ) -> tuple[torch.Tensor, torch.Tensor]:  # (vertices,faces)
 
-    #   c2                    c2               c...corners = faces
-    #    . .                   . .             s...side_vert, 0 means no split
-    #    .   .                 .N2 .           S...shrunk_face
-    #    .     .               .     .         Ni...new_faces
-    #   s2      s1           s2|c2...s1|c1
-    #    .        .            .     .  .
-    #    .          .          . S .      .
-    #    .            .        . .     N1    .
-    #   c0...(s0=0)....c1    s0|c0...........c1
-    #
     # pseudo-code:
     #   S = [s0|c0,s1|c1,s2|c2] example:[c0,s1,s2]
     #   split = side_vert!=0 example:[False,True,True]
@@ -334,12 +324,7 @@ def flip_edges(
 
     neighbor_degrees = vertex_degree[neighbors]  # E,LR=2
     edge_degrees = vertex_degree[edges]  # E,2
-    #
-    # loss = Sum_over_affected_vertices((new_degree-6)**2)
-    # loss_change = Sum_over_neighbor_vertices((degree+1-6)**2-(degree-6)**2)
-    #                   + Sum_over_edge_vertices((degree-1-6)**2-(degree-6)**2)
-    #             = 2 * (2 + Sum_over_neighbor_vertices(degree) - Sum_over_edge_vertices(degree))
-    #
+
     loss_change = 2 + neighbor_degrees.sum(dim=-1) - edge_degrees.sum(dim=-1)  # E
     candidates = torch.logical_and(loss_change < 0, edge_is_inside)  # E
     loss_change = loss_change[candidates]  # E'

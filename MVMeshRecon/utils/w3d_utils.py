@@ -183,8 +183,8 @@ def add_margin(pil_img, color=0, size=256):
     result.paste(pil_img, ((size - width) // 2, (size - height) // 2))
     return result
 
-def load_a_from_pils(front_image=None,rgbs=None,rm_normal=None,imSize=[256,256],view_types=['front', 'front_right', 'right', 'back', 'left', 'front_left'],load_color=True,
-                     cam_pose_dir='mv_diffusion_30/data/fixed_poses/nine_views',normal_system='front',crop_size=192):
+def load_mv_prediction(front_image=None, rgbs=None, rm_normal=None, imSize=[256, 256], view_types=['front', 'front_right', 'right', 'back', 'left', 'front_left'], load_color=True,
+                       cam_pose_dir='mv_diffusion_30/data/fixed_poses/nine_views', normal_system='front', crop_size=192):
     all_images = []
     all_normals = []
     all_normals_world = []

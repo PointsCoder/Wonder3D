@@ -601,7 +601,7 @@ class Mesh(ExporterMixin, CoordinateSystemMixin):
         print(f"UV unwrapping, V={self.v_pos.shape[0]}, F={self.t_pos_idx.shape[0]}, may take a while ...")
         t = perf_counter()
         mesh.compute_uvatlas(**_config)
-        print(f"UV unwrapping wastes {perf_counter() - t} sec")
+        print(f"UV unwrapping uses {perf_counter() - t} sec")
 
         triangle_uvs = mesh.triangle.texture_uvs.numpy().astype(np.float32)  # [F*3, 2]
         triangle_uvs = triangle_uvs.reshape(self.t_pos_idx.shape[0], 3, 2)

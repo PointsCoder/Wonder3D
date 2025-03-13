@@ -6,7 +6,7 @@ import numpy as np
 import sys
 
 from PIL import Image
-from remeshing.util.typing import * 
+from typing import List
 import cv2
 import numpy as np
 
@@ -21,14 +21,14 @@ from pymeshlab import PercentageValue
 from torchvision.utils import save_image
 
 
-def to_pyml_mesh(vertices,faces):
+def transfer_to_pyml_mesh(vertices, faces):
     m1 = pymeshlab.Mesh(
         vertex_matrix=vertices.cpu().float().numpy().astype(np.float64),
         face_matrix=faces.cpu().long().numpy().astype(np.int32),
     )
     return m1
 
-def meshlab_mesh_to_py3dmesh(mesh: pymeshlab.Mesh) -> Meshes:
+def transfer_meshlab_to_py3dmesh(mesh: pymeshlab.Mesh) -> Meshes:
     verts = torch.from_numpy(mesh.vertex_matrix()).float()
     faces = torch.from_numpy(mesh.face_matrix()).long()
     colors = torch.from_numpy(mesh.vertex_color_matrix()[..., :3]).float()
@@ -46,7 +46,7 @@ def simple_clean_mesh(pyml_mesh: ml.Mesh, apply_smooth=True, stepsmoothnum=1, ap
         ms.apply_filter("meshing_repair_non_manifold_vertices")
         ms.apply_filter("meshing_repair_non_manifold_edges", method='Remove Faces')
         ms.apply_filter("meshing_surface_subdivision_loop", iterations=2, threshold=PercentageValue(sub_divide_threshold))
-    return meshlab_mesh_to_py3dmesh(ms.current_mesh())
+    return transfer_meshlab_to_py3dmesh(ms.current_mesh())
 
     
 def c2w_to_w2c(c2w):
@@ -57,7 +57,7 @@ def c2w_to_w2c(c2w):
     
     return w2c
 
-def to_py3d_mesh(vertices, faces, normals=None):
+def transfer_to_py3d_mesh(vertices, faces, normals=None):
     mesh = Meshes(verts=[vertices], faces=[faces], textures=None)
     if normals is None:
         normals = mesh.verts_normals_packed()
@@ -123,7 +123,7 @@ def geo_aware_mesh_refine(vertices, faces, pils: List[Image.Image], renderer, ex
 
         if i < update_warmup or i % update_normal_interval == 0:
             with torch.no_grad():
-                py3d_mesh = to_py3d_mesh(vertices, faces, normals)
+                py3d_mesh = transfer_to_py3d_mesh(vertices, faces, normals)
                 cameras = get_cameras_list_py3d(extrinsics, intrinsics, target_images.shape[-2] , device=vertices.device, b_perspective=b_persp)  #正交相机
                 _, _, target_normal = from_py3d_mesh(multiview_color_projection(py3d_mesh, target_images, cameras_list=cameras, weights=None, confidence_threshold=0.2, complete_unseen=False, below_confidence_strategy='original', reweight_with_cosangle='linear', opt_render = renderer))
                 target_normal = target_normal * 2 - 1
@@ -150,6 +150,6 @@ def geo_aware_mesh_refine(vertices, faces, pils: List[Image.Image], renderer, ex
         vertices[..., [0, 2]] = - vertices[..., [0, 2]]
 
     if return_mesh:
-        return to_py3d_mesh(vertices, faces)
+        return transfer_to_py3d_mesh(vertices, faces)
     else:
         return vertices, faces

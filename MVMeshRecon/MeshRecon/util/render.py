@@ -79,12 +79,9 @@ class Renderer:
         vert_cam = torch.matmul(vert_hom, self._mv.transpose(-2,-1)).float()
         vertices_clip = vert_hom @ self._mvp.transpose(-2,-1) #C,V,4
         rast_out,_ = dr.rasterize(self._glctx, vertices_clip, faces, resolution=self._image_size, grad_db=False) #C,H,W,4
-        # disp = 1 / (vert_cam[..., [2]] + 1e-20)  # for controlnet
-        # disp = (disp - disp.min()) / (disp.max() - disp.min() + 1e-20) # pre-normalize
-        # depth, _ = dr.interpolate(disp, rast_out, faces) # [1, H, W, 1]
         v_depth = vert_cam[..., [2]]
         depth, _ = dr.interpolate(v_depth, rast_out, faces) # [1, H, W, 1]
-        #depth = depth.squeeze(0) # [H, W, 1]
+
         return depth #C,H,W,4
     #
     def render_RGB_texture(self,
@@ -170,58 +167,6 @@ class Renderer:
         rgbd_texture = torch.lerp(torch.zeros_like(rgbd_texture), rgbd_texture, alpha)
 
         return rgbd_texture  # C,H,W,4 (RGBD)
-
-    # def render_RGB_texture(self,
-    #                        vertices: torch.Tensor,  # V,3 float
-    #                        faces: torch.Tensor,  # F,3 long
-    #                        vt,  # [V,2], range(0, 1]
-    #                        ft,  # [F,3]
-    #                        texture,  # [B,H,W,3] or [H,W,3]
-    #                        ) -> torch.Tensor:  # C,H,W,4
-    #
-    #     V = vertices.shape[0]
-    #     C = self._mvp.shape[0]
-    #     faces = faces.type(torch.int32)
-    #     vert_hom = torch.cat((vertices, torch.ones(V, 1, device=vertices.device)), axis=-1)  # V,3 -> V,4
-    #     vertices_clip = vert_hom @ self._mvp.transpose(-2, -1)  # C,V,4
-    #
-    #     if len(texture.shape) == 3:
-    #         texture = texture.unsqueeze(0)
-    #
-    #     # 将纹理从 RGB 转换为 RGBA，alpha 值默认为 1.0
-    #     if texture.shape[-1] == 3:  # 检查是否为 RGB
-    #         alpha_channel = torch.ones((texture.shape[0], texture.shape[1], texture.shape[2], 1),
-    #                                    device=texture.device)  # 创建 alpha 通道
-    #         rgba_texture = torch.cat((texture, alpha_channel), dim=-1)  # 将 RGB 和 alpha 合并
-    #     else:
-    #         rgba_texture = texture  # 如果已经是 RGBA，则保持不变
-    #
-    #     rgba_texture = rgba_texture.tile(C, 1, 1, 1)  # 扩展纹理以匹配视图数
-    #
-    #     rast_out, rast_db = dr.rasterize(self._glctx, vertices_clip, faces, resolution=self._image_size)  # C,H,W,4
-    #
-    #     # 使用深度信息生成 alpha 通道
-    #     mask = (rast_out[..., [-1]] > 0)  # 检查哪些像素是可见的
-    #     alpha = mask.float()  # 将可见像素转换为 1.0，其他为 0.0
-    #
-    #     # rgb texture
-    #     v_tex_ndc = vt * 2.0 - 1.0
-    #     t_tex_idx = ft.to(torch.int32)
-    #     gb_uv, _ = dr.interpolate(v_tex_ndc, rast_out, t_tex_idx)
-    #     gb_uv = torch.lerp(torch.full_like(gb_uv, fill_value=-1.0), gb_uv, alpha)
-    #
-    #     # 使用 RGBA 纹理进行采样
-    #     gb_texture = torch.nn.functional.grid_sample(rgba_texture.permute(0, 3, 1, 2), gb_uv, mode='nearest').permute(0, 2, 3, 1)
-    #     gb_texture = dr.antialias(gb_texture.contiguous(), rast_out, vertices_clip, faces)
-    #     gb_texture = torch.lerp(torch.zeros_like(gb_texture), gb_texture, alpha)
-    #
-    #     # 使用 alpha 通道信息
-    #     # alpha = alpha.unsqueeze(-1).unsqueeze(-1)  # 确保 alpha 为 [C,H,W,1]
-    #     # print(gb_texture.shape, alpha.shape)
-    #     # gb_texture = torch.cat((gb_texture, alpha), dim=-1)  # C,H,W,4
-    #
-    #     return gb_texture  # C,H,W,4
-
 class NormalsRenderer:
 
     _glctx: dr.RasterizeCudaContext = None

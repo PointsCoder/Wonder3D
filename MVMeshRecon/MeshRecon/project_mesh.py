@@ -66,7 +66,7 @@ def _warmup(glctx, device=None):
     tri = tensor([[0, 1, 2]], dtype=torch.int32)
     dr.rasterize(glctx, pos, tri, resolution=[256, 256])
 
-class Pix2FacesRenderer:
+class PixeltoFaceRenderer:
     def __init__(self, device="cuda"):
         # self._glctx = dr.RasterizeGLContext(output_db=False, device=device)
         self._glctx = dr.RasterizeCudaContext(device=device)
@@ -109,7 +109,7 @@ class Pix2FacesRenderer:
         # exit()
         return pix_to_face
 
-pix2faces_renderer = Pix2FacesRenderer()
+pix2faces_renderer = PixeltoFaceRenderer()
 
 def get_visible_faces(meshes: Meshes, cameras: CamerasBase, resolution=1024, opt_render = None):
     # pix_to_face = render_pix2faces_py3d(meshes, cameras, H=resolution, W=resolution)['pix_to_face']
@@ -233,7 +233,7 @@ def project_color(meshes: Meshes, cameras: CamerasBase, pil_image , use_alpha=Tr
         "cos_angles": cos_angles,
     }
 
-def complete_unseen_vertex_color(meshes: Meshes, valid_index: torch.Tensor) -> dict:
+def propogate_unseen_vertex_color(meshes: Meshes, valid_index: torch.Tensor) -> dict:
     """
     meshes: the mesh with vertex color to be completed.
     valid_index: the index of the valid vertices, where valid means colors are fixed. [V, 1]
@@ -368,7 +368,7 @@ def multiview_color_projection(meshes: Meshes, image_list: List[Image.Image], ca
     meshes.textures = TexturesVertex(verts_features=[texture_values])
     
     if complete_unseen:
-        meshes = complete_unseen_vertex_color(meshes, torch.arange(texture_values.shape[0]).to(device)[texture_counts[:, 0] >= confidence_threshold])
+        meshes = propogate_unseen_vertex_color(meshes, torch.arange(texture_values.shape[0]).to(device)[texture_counts[:, 0] >= confidence_threshold])
     ret_mesh = meshes.detach()
     del meshes
     return ret_mesh

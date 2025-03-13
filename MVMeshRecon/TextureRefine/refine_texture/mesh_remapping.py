@@ -17,8 +17,6 @@ from .common.cameras.mvp_matrix_v2 import project
 from .common.renderers.nvdiffrast.renderer import NVDiffRendererBase
 from .common.renderers.nvdiffrast.uv_dilation import uv_dilation
 
-from remeshing.util.func import save_images, save_obj
-
 def remapping_uv_texture(
     mesh: Mesh, 
     c2ws: torch.Tensor, 

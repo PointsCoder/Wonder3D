@@ -13,17 +13,6 @@ from typing import List, Tuple
 from PIL import Image
 import trimesh
 
-# providers = [
-#     ('CUDAExecutionProvider', {
-#         'device_id': 0,
-#         'arena_extend_strategy': 'kSameAsRequested',
-#         'gpu_mem_limit': 8 * 1024 * 1024 * 1024,
-#         'cudnn_conv_algo_search': 'HEURISTIC',
-#     })
-# ]
-#
-# session = new_session(providers=providers)
-
 NEG_PROMPT="sketch, sculpture, hand drawing, outline, single color, NSFW, lowres, bad anatomy,bad hands, text, error, missing fingers, yellow sleeves, extra digit, fewer digits, cropped, worst quality, low quality, normal quality, jpeg artifacts, signature, watermark, username, blurry,(worst quality:1.4),(low quality:1.4)"
 
 def load_mesh_with_trimesh(file_name, file_type=None):
