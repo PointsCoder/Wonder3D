@@ -192,6 +192,8 @@ def load_mv_prediction(front_image=None, rgbs=None, rm_normal=None, imSize=[256,
     all_color_masks = []
     all_poses = []
     all_w2cs = []
+    current_dir = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+    cam_pose_dir = os.path.join(current_dir, cam_pose_dir)
     print(os.path.join(cam_pose_dir, '*_%s_RT.txt' % ('front')))
     RT_front = np.loadtxt(glob(os.path.join(cam_pose_dir, '*_%s_RT.txt' % ('front')))[0])  # world2cam matrix
     RT_front_cv = RT_opengl2opencv(RT_front)  # convert normal from opengl to opencv

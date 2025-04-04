@@ -1,0 +1,4 @@
+ckpts/
+*.egg-info/
+__pycache__/
+weights/

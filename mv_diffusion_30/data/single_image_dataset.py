@@ -114,7 +114,9 @@ class SingleImageDataset(Dataset):
         elif self.num_views == 6:
             self.view_types = ['front', 'front_right', 'right', 'back', 'left', 'front_left']
 
-        self.fix_cam_pose_dir = "./mv_diffusion_30/data/fixed_poses/nine_views"
+        # self.fix_cam_pose_dir = "./mv_diffusion_30/data/fixed_poses/nine_views"
+        current_dir = os.path.dirname(os.path.abspath(__file__))
+        self.fix_cam_pose_dir = os.path.join(current_dir, "fixed_poses/nine_views")
 
         self.fix_cam_poses = self.load_fixed_poses()  # world2cam matrix
 
@@ -311,5 +313,3 @@ class SingleImageDataset(Dataset):
         }
 
         return out
-
-

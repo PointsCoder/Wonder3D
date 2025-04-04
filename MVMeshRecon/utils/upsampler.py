@@ -51,9 +51,10 @@ class RealESRGANer():
         self.device = device
 
         # if the model_path starts with https, it will first download models to the folder: realesrgan/weights
+        current_dir = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
         if model_path.startswith('https://'):
             model_path = load_file_from_url(
-                url=model_path, model_dir=os.path.join('weights/realesrgan'), progress=True, file_name=None)
+                url=model_path, model_dir=os.path.join(current_dir, 'weights/realesrgan'), progress=True, file_name=None)
         loadnet = torch.load(model_path, map_location=torch.device('cpu'))
         # prefer to use params_ema
         if 'params_ema' in loadnet:

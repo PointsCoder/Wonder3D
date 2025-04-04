@@ -119,9 +119,11 @@ class InferenceImageDataset(Dataset):
             self.view_types  = ['front', 'front_right', 'right', 'back', 'left']
         elif self.num_views == 6:
             self.view_types  = ['front', 'front_right', 'right', 'back', 'left', 'front_left']
-        
-        self.fix_cam_pose_dir = "./mv_diffusion_30/data/fixed_poses/nine_views"
-        
+
+        current_dir = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+        self.fix_cam_pose_dir = os.path.join(current_dir, "mv_diffusion_30/data/fixed_poses/nine_views")
+        # self.fix_cam_pose_dir = "./mv_diffusion_30/data/fixed_poses/nine_views"
+
         self.fix_cam_poses = self.load_fixed_poses()  # world2cam matrix
 
         self.bg_color = self.get_bg_color()
@@ -136,7 +138,7 @@ class InferenceImageDataset(Dataset):
             poses[face] = RT
 
         return poses
-        
+
     def cartesian_to_spherical(self, xyz):
         ptsnew = np.hstack((xyz, np.zeros(xyz.shape)))
         xy = xyz[:,0]**2 + xyz[:,1]**2
@@ -155,11 +157,11 @@ class InferenceImageDataset(Dataset):
 
         theta_cond, azimuth_cond, z_cond = self.cartesian_to_spherical(T_cond[None, :])
         theta_target, azimuth_target, z_target = self.cartesian_to_spherical(T_target[None, :])
-        
+
         d_theta = theta_target - theta_cond
         d_azimuth = (azimuth_target - azimuth_cond) % (2 * math.pi)
         d_z = z_target - z_cond
-        
+
         # d_T = torch.tensor([d_theta.item(), math.sin(d_azimuth.item()), math.cos(d_azimuth.item()), d_z.item()])
         return d_theta, d_azimuth
 
@@ -177,8 +179,8 @@ class InferenceImageDataset(Dataset):
         else:
             raise NotImplementedError
         return bg_color
-    
-    
+
+
     def load_image(self, img_path, bg_color, return_type='pt', Imagefile=None):
         # pil always returns uint8
         if Imagefile is None:
@@ -213,7 +215,7 @@ class InferenceImageDataset(Dataset):
             alpha = torch.from_numpy(alpha)
         else:
             raise NotImplementedError
-        
+
         return img, alpha
 
     def load_image_mv(self, img_path, bg_color, return_type='pt', Imagefile=None):
@@ -344,8 +346,3 @@ class InferenceImageDataset(Dataset):
         }
 
         return out
-
-
-
-
-

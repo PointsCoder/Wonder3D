@@ -54,13 +54,14 @@ def coarse_recon(front_image, rgbs, normals, camera_type, scence_name, crop_size
         weights = None
         mv, proj = make_wonder3D_cameras(cam_type=camera_type)
         # change the data loading
+        work_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
         RGBs, normal_masks, normals, normals_world, c2ws, w2cs, color_masks, front_img = load_mv_prediction(front_image=front_image,
                                                                                                             rgbs=rgbs,
                                                                                                             rm_normal=normals,
                                                                                                             imSize=[256,256],
                                                                                                             view_types=['front', 'front_right', 'right', 'back', 'left', 'front_left'],
                                                                                                             load_color=True,
-                                                                                                            cam_pose_dir='mv_diffusion_30/data/fixed_poses/nine_views',
+                                                                                                            cam_pose_dir=os.path.join(work_dir, 'mv_diffusion_30/data/fixed_poses/nine_views'),
                                                                                                             normal_system='front',
                                                                                                             crop_size=crop_size)
 
